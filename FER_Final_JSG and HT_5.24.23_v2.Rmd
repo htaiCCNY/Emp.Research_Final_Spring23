@@ -1,0 +1,368 @@
+---
+title: 'Final Exam Analysis: Stamford, CT Auto Accidents'
+author: "Holli Tai & Joaquin Sanchez Gomez"
+date: "Spring 2023"
+output: 
+  flexdashboard::flex_dashboard:
+    source: embed
+    vertical_layout: scroll
+---
+
+```{r echo=FALSE}
+
+
+```
+
+```{r}
+library(tidyverse)
+library(flexdashboard)
+library(plotly)
+library(leaflet)
+library(dygraphs)
+library(metricsgraphics)
+library(readr)
+library(DT)
+```
+
+```{r}
+setwd("C:/Users/Holli Tai/Documents/Documents - Local/Documents/Empirical Research/Emp_Research/accidentdata")
+
+
+
+Young_Driver_Crashes <- Young_Driver_Crashes <- read.csv("Young_Driver_Crashes.csv")
+
+
+Wrong_Way_Crashes <- read.csv("Wrong_Way_Crashes.csv")
+
+
+Work_Zone_Crashes <- read.csv("Work_Zone_Crashes.csv")
+
+
+Unlicensed_Driver_Crashes <- read.csv("Unlicensed_Driver_Crashes.csv")
+
+
+Pedestrian_Crashes <- read.csv("Pedestrian_Crashes.csv")
+
+
+Older_Driver_Crashes <- read.csv("Older_Driver_Crashes.csv")
+
+
+Non_Motorist_Crashes <- read.csv("Non_Motorist_Crashes.csv")
+
+Motorcycle_Crashes <- read.csv("Motorcycle_Crashes.csv")
+
+
+Intersection_Crashes <- read.csv("Intersection_Crashes.csv")
+
+
+Fixed_Object_Crashes <- read.csv("Fixed_Object_Crashes.csv")
+
+
+DUI_Crashes <- read.csv("DUI_Crashes.csv")
+
+
+Distracted_Driver_Crashes <- read.csv("Distracted_Driver_Crashes.csv")
+
+
+accidents_CT <- bind_rows(Distracted_Driver_Crashes,DUI_Crashes,Fixed_Object_Crashes,Intersection_Crashes,Motorcycle_Crashes,Non_Motorist_Crashes,Older_Driver_Crashes,Pedestrian_Crashes,Unlicensed_Driver_Crashes,Work_Zone_Crashes,Wrong_Way_Crashes,Young_Driver_Crashes)
+
+accidents_CT <- accidents_CT %>% distinct()
+
+
+accidents_CTex <- Fixed_Object_Crashes %>% mutate(Fixed_Object=1) %>% select(CrashID, Fixed_Object) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CT, by=c("CrashID"))
+
+
+accidents_CTex <- Distracted_Driver_Crashes %>% mutate(Distracted=1) %>% select(CrashID, Distracted) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- DUI_Crashes %>% mutate(DUI=1) %>% select(CrashID, DUI) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Intersection_Crashes %>% mutate(Intersection=1) %>% select(CrashID, Intersection) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Motorcycle_Crashes %>% mutate(Moto=1) %>% select(CrashID, Moto) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Non_Motorist_Crashes %>% mutate(Non_motorist=1) %>% select(CrashID, Non_motorist) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Older_Driver_Crashes %>% mutate(Old_people=1) %>% select(CrashID, Old_people) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Pedestrian_Crashes %>% mutate(Pedestrian=1) %>% select(CrashID, Pedestrian) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Unlicensed_Driver_Crashes %>% mutate(Unlicensed=1) %>% select(CrashID, Unlicensed) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Work_Zone_Crashes %>% mutate(Work_zone=1) %>% select(CrashID, Work_zone) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Wrong_Way_Crashes %>% mutate(wrong_way=1) %>% select(CrashID, wrong_way) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+accidents_CTex <- Young_Driver_Crashes %>% mutate(young_driver=1) %>% select(CrashID, young_driver) %>% distinct(CrashID, .keep_all = TRUE) %>%
+  right_join(., accidents_CTex, by=c("CrashID"))
+
+
+accidents_CTex <- accidents_CTex %>% replace(is.na(.),0)
+
+
+stamford <- accidents_CTex[accidents_CTex$CrashTownName == "Stamford", ]
+
+
+
+
+```
+
+
+
+Date and Time Analysis {.tabset}
+====================================
+
+### 
+
+```{r}
+
+accidents_per_year <-stamford %>%group_by(CrashDateYear) %>% count() %>% arrange(desc(n))
+
+colnames(accidents_per_year)[2]='NumberofCrashes'
+colnames(accidents_per_year)[1]='Year'
+
+p <- ggplot(data=accidents_per_year,aes(x=Year,y=NumberofCrashes,fill=factor(Year))) +
+  geom_bar(stat='identity')+
+  scale_fill_manual(values=c("#9933FF",
+                             "#33FFFF",
+                             "red",
+                             "darkblue",
+                             "orange",
+                             "green",
+                             "yellow",
+                             "magenta"))
+
+
+Crashes_Per_Year<- p + ggtitle("Stamford, CT: Accidents per Year") +
+  xlab("Year") + ylab("Crash Count")
+
+ggplotly(Crashes_Per_Year)
+
+
+```
+
+### 
+
+```{r}
+most_day <- stamford %>%group_by(DayofWeek) %>% count %>% arrange(desc(n))
+
+
+colnames(most_day)[1]='DayofWeek'
+colnames(most_day)[2]='Crashes'
+
+day <- ggplot(data=most_day,aes(x=DayofWeek,y=Crashes, fill=DayofWeek)) +
+  geom_bar(stat='identity')
+
+
+days_most_crashes <-day + ggtitle("Crashes by Day of Week") +
+  xlab("Day of Week") + ylab ("Crash Count")
+
+
+ggplotly(days_most_crashes)
+```
+
+### 
+
+```{r}
+Week_Hour <-stamford %>%group_by(CrashDateYear,DayofWeek,CrashTimeHour) %>% count %>% arrange(desc(n))
+
+
+colnames(Week_Hour)[1]='Year'
+colnames(Week_Hour)[2]='Day of Week'
+colnames(Week_Hour)[3]='Hour'
+colnames(Week_Hour)[4]='Number of Crashes'
+datatable(Week_Hour,caption = 'Quantity of Crashes by Day and Hour')
+```
+
+
+Crash Type Severity & Location
+===================================
+
+### 
+
+```{r}
+
+sevplot<- stamford %>%group_by(CrashSeverityDesc) %>% count %>% arrange(desc(n))
+
+
+colnames(sevplot)[1]="Severity"
+colnames(sevplot)[2]="Count"
+
+
+sev_gplot <- ggplot(data=sevplot,aes(x=Severity,y=Count, fill=Severity)) +
+  geom_histogram(stat='identity')
+
+sevplotly <-sev_gplot + ggtitle("Accident Severity Prevalence")
+
+ggplotly(sevplotly)
+```
+
+### 
+
+```{r}
+
+Severity <- factor(stamford$CrashSeverity, labels=c("Injury of Any Type", "Fatal","Only Property Damage"))
+severity_and_weather<-ggplot(stamford, aes(x=WeatherConditionDesc, fill=Severity)) + geom_bar(position="dodge")
+
+weathsevere <-severity_and_weather + ggtitle("Weather and Crash Severity")+
+  xlab("Weather Condition") + ylab ("Crash Count")
+
+flip_weathsevere <- weathsevere+coord_flip()
+ggplotly(flip_weathsevere)
+
+colnames(most_day)[1]='DayofWeek'
+colnames(most_day)[2]='Crashes'
+
+day <- ggplot(data=most_day,aes(x=DayofWeek,y=Crashes, fill=DayofWeek)) +
+  geom_bar(stat='identity')
+```
+
+### 
+
+```{r}
+Severity_location<-stamford %>%group_by(CrashSeverityDesc,CrashSpecificLocationDesc) %>% count %>% arrange(desc(n))
+
+colnames(Severity_location)[1]='Severity'
+colnames(Severity_location)[2]='Location'
+colnames(Severity_location)[3]='Count'
+
+datatable(Severity_location)
+
+```
+
+Crash Count: Various Insights
+==================================
+
+### 
+
+```{r}
+yearweatherdt <-stamford %>%group_by(CrashDateYear,WeatherConditionDesc) %>% count() %>% arrange(desc(n))
+
+colnames(yearweatherdt)[1]='Year'
+colnames(yearweatherdt)[2]='Weather'
+colnames(yearweatherdt)[3]='Crash Count'
+
+yearweatherdt <-stamford %>%group_by(CrashDateYear,WeatherConditionDesc) %>% count() %>% arrange(desc(n))
+
+colnames(yearweatherdt)[1]='Year'
+colnames(yearweatherdt)[2]='Weather'
+colnames(yearweatherdt)[3]='Crash Count'
+
+datatable(yearweatherdt,caption = "Yearly Crashes by Weather Condition",filter='top',options=list(pageLength=3, autoWidth=FALSE))
+```
+
+Crash Prevalence by Reported Intersection
+
+### 
+
+```{r}
+
+inter_location<-stamford%>%group_by(TypeOfIntersectionDesc,RouteClassDesc) %>% count %>% arrange(desc(n))
+
+clean_interlocation <-drop_na(inter_location)
+
+
+colnames(clean_interlocation)[1]='Intersection Type'
+colnames(clean_interlocation)[2]='Route Type'
+colnames(clean_interlocation)[3]='Crashes'
+
+
+datatable(clean_interlocation, caption = "Crashes by Route Type & Intersection" ,filter='top',options=list(pageLength=3,autoWidth=FALSE))
+```
+
+
+
+MLM: Model 15
+==================================
+
+### 
+
+```{r}
+
+df <- stamford %>% mutate_if(is.ordered, factor, ordered = FALSE)
+
+library(vip)
+
+library(rsample)
+library(caret)
+library(h2o)
+
+
+set.seed(123)
+
+churn_split <- initial_split(df, prop=.7, strata = 'CrashSeverity')
+churn_train <- training(churn_split)
+churn_test <- testing(churn_split)
+
+modeln <- glm(as.factor(DUI) ~ CrashSeverity, family = binomial(link = logit), data=churn_train)
+modeln2 <- glm(as.factor(DUI) ~ CrashSeverity + young_driver, family='binomial', data=churn_train)
+
+
+
+#Decision Trees
+library(rpart)
+library(rpart.plot)
+library(pdp)
+
+model4 <- rpart(formula = DUI ~ young_driver + CrashSeverity,
+                data=churn_train)
+
+
+rpart.plot(model4)
+
+
+
+
+```
+
+###
+
+```{r}
+
+model5 <- rpart(formula = DUI ~ young_driver + LightCondition + CrashSeverity,
+                data=churn_train)
+
+rpart.plot(model5)
+
+
+```
+
+Model 16 (VIP)
+=================
+###
+
+```{r}
+
+model6 <- rpart(formula = DUI ~ .,
+                data=churn_train)
+
+
+rpart.plot(model6)
+
+
+vip(model6)
+
+
+```
+
+Model 17
+=====================
+
+###
+
+```{r}
+modeln2 <- glm(as.factor(DUI) ~ CrashSeverity + young_driver, family='binomial', data=churn_train)
+
+
+vip(modeln2)
+```
